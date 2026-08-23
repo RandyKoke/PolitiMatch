@@ -1,0 +1,26 @@
+services:
+    postgres:
+        image: postgres:16
+        container_name: politimatch-postgres
+        restart: unless-stopped
+        # Valeurs alignées sur .env.example - moteur cible imposé (Railway
+        # fournit PostgreSQL en production, cf. cahier des charges §8.3).
+        environment:
+            POSTGRES_DB: politimatch
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: politimatch_secret
+        ports:
+            - '5432:5432'
+        volumes:
+            - politimatch-postgres-data:/var/lib/postgresql/data
+            # Provisionne aussi politimatch_testing (utilisée par phpunit.xml)
+            # au premier démarrage sur un volume vide.
+            - ./docker/postgres/init-testing-db.sql:/docker-entrypoint-initdb.d/init-testing-db.sql:ro
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U postgres -d politimatch']
+            interval: 5s
+            timeout: 5s
+            retries: 10
+
+volumes:
+    politimatch-postgres-data:

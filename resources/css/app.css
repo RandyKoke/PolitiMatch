@@ -1,0 +1,225 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+/*
+ * Tokens de design PolitiMatch (cahier des charges §7 UX, §14 accessibilité).
+ *
+ * Direction artistique "Belgique institutionnelle sobre" : noir profond,
+ * or/moutarde et bordeaux, en remplacement du violet générique d'origine.
+ *
+ * --color-ink / --color-cream : les deux valeurs fixes de la direction
+ * (noir profond #1A1A1A, fond chaleureux #FAF9F6), pas des échelles :
+ * utilisées telles quelles pour le texte principal et le fond général de
+ * l'app.
+ *
+ * --color-brand-* : accent or/moutarde, boutons d'action (CTA), éléments à
+ * mettre en valeur. Échelle sur la structure standard 50-900 (classes
+ * utilitaires bg-brand-600, hover:bg-brand-700). Attention : l'or est une
+ * teinte claire, jamais en texte sur le fond clair de l'app (contraste
+ * ~2.3:1, sous le seuil AA). Utiliser --color-bordeaux-* pour du
+ * texte/liens accentués à la place.
+ *
+ * --color-bordeaux-* : accent secondaire, titres de section, liens/texte
+ * accentué, détails, dégradés du liseré tricolore. Utilisé avec parcimonie.
+ * Valeur cœur (600) choisie pour rester distincte du rouge du parti PTB
+ * (#B0212F) et du rouge "désaccord" du comparateur
+ * (--color-vote-disagree), afin d'éviter toute confusion entre identité
+ * de marque et signal politique, tout en gardant un bon contraste texte
+ * (10.7:1 sur le fond clair).
+ *
+ * --color-vote-* : code couleur du comparateur (cahier des charges §5.1,
+ * Module Comparateur), vert = accord, rouge = désaccord, gris = neutre.
+ * Vérifié spécifiquement distinct du bordeaux ci-dessus (teintes 0° vs
+ * 340°, luminosités 51% vs 27%).
+ *
+ * Contrastes vérifiés (formule de luminance relative WCAG 2.1, rapport
+ * ≥ 4.5:1 pour le texte normal) pour chaque paire réellement utilisée dans
+ * l'app.
+ */
+@theme {
+    --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+    /* Police éditoriale pour les titres et moments forts — jamais pour le
+       corps de texte courant (cf. cahier des charges §7, "sobre avant
+       tout"). Génère automatiquement l'utilitaire Tailwind `font-display`. */
+    --font-display: 'Fraunces', ui-serif, Georgia, 'Times New Roman', serif;
+    /* 3e et dernière famille de l'app : réservée au texte des questions du
+       quiz, la zone de lecture la plus fréquentée. Ni Fraunces (display,
+       pensée pour de courts titres) ni Manrope (utilitaire, volontairement
+       sans caractère) ne convenaient pour de la lecture suivie. Génère
+       l'utilitaire Tailwind `font-reading`. */
+    --font-reading: 'Newsreader', ui-serif, Georgia, 'Times New Roman', serif;
+
+    --color-ink: #1a1a1a;
+    --color-cream: #faf9f6;
+
+    --color-brand-50: #faf6eb;
+    --color-brand-100: #f6edd5;
+    --color-brand-200: #f0dca8;
+    --color-brand-300: #ebc970;
+    --color-brand-400: #e7b83c;
+    --color-brand-500: #e6ad19;
+    --color-brand-600: #d4a017;
+    --color-brand-700: #b08511;
+    --color-brand-800: #8a680f;
+    --color-brand-900: #58440e;
+
+    --color-bordeaux-50: #f7eef1;
+    --color-bordeaux-100: #ecd5dd;
+    --color-bordeaux-200: #daa9ba;
+    --color-bordeaux-300: #c77591;
+    --color-bordeaux-400: #a44162;
+    --color-bordeaux-500: #7b324b;
+    --color-bordeaux-600: #62273b;
+    --color-bordeaux-700: #4d1f2e;
+    --color-bordeaux-800: #371521;
+    --color-bordeaux-900: #250e16;
+
+    --color-vote-agree: #16a34a;
+    --color-vote-agree-bg: #f0fdf4;
+    --color-vote-disagree: #dc2626;
+    --color-vote-disagree-bg: #fef2f2;
+    --color-vote-neutral: #6b7280;
+    --color-vote-neutral-bg: #f9fafb;
+
+    --color-danger-500: #dc2626;
+    --color-danger-600: #b91c1c;
+
+    /*
+     * Le gris "400" par défaut de Tailwind (#9ca3af) ne donne qu'un
+     * contraste de 2.60:1 sur fond blanc pour le texte secondaire (dates,
+     * sources, icône de fermeture de modale) qui s'en sert, bien sous le
+     * seuil AA de 4.5:1. Redéfini ici une seule fois, au niveau du token
+     * Tailwind lui-même (donc appliqué automatiquement partout où
+     * `text-gray-400` est déjà utilisé) : #647087, même famille de teinte
+     * (gris neutre légèrement froid), vérifié à 4.99:1 sur blanc et 4.74:1
+     * sur --color-cream. --color-gray-500 (utilisé plus largement pour
+     * l'essentiel du texte secondaire courant) n'est volontairement pas
+     * touché ici : il passe déjà le seuil AA (~4.8:1 sur blanc).
+     */
+    --color-gray-400: #647087;
+}
+
+/*
+ * Liseré tricolore (noir, or, bordeaux, dans cet ordre) : séparateur
+ * discret sous le logo du header, accent de bordure
+ * supérieure des cartes "climax" (résultat, migration de compte), et
+ * remplissage de la barre de progression du quiz. Défini une seule fois ici
+ * (custom property, pas une classe Tailwind arbitraire dupliquée à chaque
+ * usage) pour rester centralisé et cohérent partout où il apparaît.
+ */
+/* Hors de @theme (qui ne compile que des tokens de design reconnus par
+   Tailwind) : simple custom property CSS globale, consommée via
+   bg-[var(--gradient-tricolore)] ou style="background: var(--gradient-tricolore)". */
+:root {
+    --gradient-tricolore: linear-gradient(
+        90deg,
+        var(--color-ink) 0% 33.333%,
+        var(--color-brand-600) 33.333% 66.666%,
+        var(--color-bordeaux-600) 66.666% 100%
+    );
+}
+
+/*
+ * Scintillement des deux CTA de l'accueil : un reflet lumineux qui balaie
+ * périodiquement la surface, jamais en boucle continue (cahier des charges
+ * §7, "sobre avant tout"), avec une longue pause entre deux passages plutôt
+ * qu'une animation ininterrompue. Deux classes
+ * distinctes, pas une seule paramétrée par variable : .pm-shimmer-cta habille
+ * un bouton plein (fond or, "Commencer") avec un reflet blanc qui balaie la
+ * surface ; .pm-shimmer-text habille un simple lien texte ("Se connecter",
+ * pas de fond à balayer) avec un dégradé animé découpé sur le texte lui-même.
+ * Fréquence et opacité nettement plus faibles sur la variante texte, pour
+ * qu'aucune ambiguïté ne soit possible sur le bouton qui capte le plus
+ * l'attention. Toutes deux désactivées sous prefers-reduced-motion : l'élément
+ * garde alors son apparence normale, sans animation ni dégradé de texte.
+ */
+.pm-shimmer-cta {
+    position: relative;
+    overflow: hidden;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    /* transform plutôt qu'une animation de background-position : composité
+       par le GPU (jamais de repaint à chaque frame), sans coût perceptible
+       même sur un appareil modeste. Bande deux fois plus large que le
+       bouton, partant hors-champ à
+       gauche, pour que le dégradé transparent-blanc-transparent balaie
+       entièrement la surface visible en un seul passage. */
+    .pm-shimmer-cta::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        left: -100%;
+        width: 200%;
+        background-image: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.8) 50%, transparent 58%);
+        transform: translateX(-15%);
+        animation: pm-shimmer-sweep-cta 3.4s ease-in-out infinite;
+        animation-delay: 1.2s;
+        pointer-events: none;
+        will-change: transform;
+    }
+
+    /* Le découpage du dégradé sur le texte lui-même (background-clip: text)
+       ne peut pas se satisfaire d'un transform (déplacer l'élément
+       déplacerait le texte, pas seulement le reflet) : background-position
+       reste ici la seule technique possible. Surface concernée minuscule (un
+       seul lien texte) et fréquence basse (5s, longue pause) : impact de
+       repaint négligeable en pratique, sans commune mesure avec une
+       animation continue plein écran. Couleurs de base pilotées par deux
+       variables CSS (repli sur le bordeaux de marque), jamais currentcolor :
+       currentcolor se serait résolu en `transparent` ici, puisque
+       `color: transparent` est justement ce qui permet au découpage sur
+       texte de fonctionner sur ce même élément — bug réel constaté (premier
+       lien concerné entièrement invisible) avant ce correctif. Variables
+       plutôt que des couleurs figées : ce même effet est réutilisé sur "Les
+       partis" (gris) après l'échange avec "Se connecter" (bordeaux), sans
+       dupliquer toute la règle pour une simple histoire de teinte — chaque
+       usage surcharge --pm-shimmer-base/--pm-shimmer-hover au besoin. */
+    .pm-shimmer-text {
+        background-image: linear-gradient(
+            115deg,
+            var(--pm-shimmer-base, var(--color-bordeaux-600)) 44%,
+            var(--color-brand-400) 50%,
+            var(--pm-shimmer-base, var(--color-bordeaux-600)) 56%
+        );
+        background-size: 250% 100%;
+        background-position: 150% 0;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: pm-shimmer-sweep-text 5s ease-in-out infinite;
+        animation-delay: 2.4s;
+    }
+
+    .pm-shimmer-text:hover {
+        background-image: linear-gradient(
+            115deg,
+            var(--pm-shimmer-hover, var(--color-bordeaux-700)) 44%,
+            var(--color-brand-400) 50%,
+            var(--pm-shimmer-hover, var(--color-bordeaux-700)) 56%
+        );
+    }
+}
+
+@keyframes pm-shimmer-sweep-cta {
+    0%,
+    58% {
+        transform: translateX(-15%);
+    }
+    100% {
+        transform: translateX(65%);
+    }
+}
+
+@keyframes pm-shimmer-sweep-text {
+    0%,
+    58% {
+        background-position: 150% 0;
+    }
+    100% {
+        background-position: -50% 0;
+    }
+}
