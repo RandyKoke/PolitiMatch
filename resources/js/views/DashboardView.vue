@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useAuthStore } from '@/stores/authStore';
@@ -23,6 +23,17 @@ const uiStore = useUiStore();
 
 const loading = ref(true);
 const startingNew = ref(false);
+// Le quiz "pending" le plus récent, s'il y en a un : celui qu'un nouveau clic
+// sur le bouton principal doit reprendre plutôt qu'abandonner au profit d'un
+// nouveau QuizResult. loadHistory() trie déjà par created_at décroissant.
+const pendingHistoryEntry = computed(() => resultsStore.history.find((entry) => entry.status === 'pending') ?? null);
+const startQuizLabel = computed(() => {
+    if (pendingHistoryEntry.value) {
+        return 'Reprendre le quiz';
+    }
+
+    return resultsStore.history.length === 0 ? 'Commencer le quiz' : 'Refaire le quiz';
+});
 const avatarModalOpen = ref(false);
 const newAvatarSeed = ref(null);
 const savingAvatar = ref(false);
@@ -78,6 +89,13 @@ const statusVariants = {
 async function startNewQuiz() {
     startingNew.value = true;
     try {
+        if (pendingHistoryEntry.value) {
+            quizStore.setQuizUuid(pendingHistoryEntry.value.uuid);
+            router.push('/quiz');
+
+            return;
+        }
+
         await quizStore.startQuiz();
         router.push('/intro');
     } catch {
@@ -85,6 +103,22 @@ async function startNewQuiz() {
     } finally {
         startingNew.value = false;
     }
+}
+
+/**
+ * router.push seul ne suffit pas pour un résultat qui n'est pas encore
+ * "completed" : ResultsView (isOwnActiveQuiz) ne propose les actions de
+ * reprise/relance que si quizStore.currentQuizUuid correspond au résultat
+ * consulté. Or currentQuizUuid ne pointe en général que vers le dernier
+ * quiz démarré sur cet appareil, pas nécessairement celui-ci si l'entrée
+ * vient d'une session précédente ou d'un autre appareil : il faut donc
+ * l'aligner explicitement ici.
+ */
+function openHistoryEntry(entry) {
+    if (entry.status !== 'completed') {
+        quizStore.setQuizUuid(entry.uuid);
+    }
+    router.push(`/results/${entry.uuid}`);
 }
 
 function formatDate(value) {
@@ -113,7 +147,7 @@ function formatDate(value) {
                     Changer mon avatar
                 </button>
             </div>
-            <PmButton class="mt-4 w-full" :loading="startingNew" @click="startNewQuiz">Refaire le quiz</PmButton>
+            <PmButton class="mt-4 w-full" :loading="startingNew" @click="startNewQuiz">{{ startQuizLabel }}</PmButton>
         </PmCard>
 
         <PmModal v-model="avatarModalOpen" title="Changer mon avatar">
@@ -141,14 +175,13 @@ function formatDate(value) {
                     class="flex items-center justify-between gap-3 rounded-xl border border-gray-100 p-3"
                 >
                     <div>
-                        <router-link
-                            v-if="entry.status === 'completed'"
-                            :to="`/results/${entry.uuid}`"
-                            class="font-medium text-gray-900 hover:underline"
+                        <button
+                            type="button"
+                            class="text-left font-medium text-gray-900 hover:underline"
+                            @click="openHistoryEntry(entry)"
                         >
-                            {{ entry.profile_label ?? 'Voir le résultat' }}
-                        </router-link>
-                        <span v-else class="font-medium text-gray-500">Quiz du {{ formatDate(entry.completed_at ?? entry.created_at) }}</span>
+                            {{ entry.status === 'completed' ? (entry.profile_label ?? 'Voir le résultat') : `Quiz du ${formatDate(entry.completed_at ?? entry.created_at)}` }}
+                        </button>
                         <p class="text-xs text-gray-400">{{ formatDate(entry.completed_at ?? entry.created_at) }}</p>
                     </div>
                     <PmTag v-if="statusLabels[entry.status]" :variant="statusVariants[entry.status] ?? 'neutral'">{{ statusLabels[entry.status] }}</PmTag>
