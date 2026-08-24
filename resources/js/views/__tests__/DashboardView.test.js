@@ -13,7 +13,7 @@ vi.mock('vue-router', () => ({
     useRouter: () => ({ push: pushMock }),
 }));
 
-vi.mock('@/services/apiUsers', () => ({ apiUsers: { results: vi.fn() } }));
+vi.mock('@/services/apiUsers', () => ({ apiUsers: { results: vi.fn(), deleteResult: vi.fn() } }));
 vi.mock('@/services/apiQuiz', () => ({ apiQuiz: { start: vi.fn() } }));
 
 beforeEach(() => {
@@ -136,7 +136,7 @@ describe('DashboardView : reprise d\'un quiz déjà en cours', () => {
         await flushPromises();
 
         const entryButtons = wrapper.findAll('li button');
-        expect(entryButtons).toHaveLength(1);
+        expect(entryButtons).toHaveLength(2); // le libellé de l'entrée + le bouton de suppression
 
         await entryButtons[0].trigger('click');
 
@@ -160,5 +160,113 @@ describe('DashboardView : reprise d\'un quiz déjà en cours', () => {
 
         expect(pushMock).toHaveBeenCalledWith('/results/done-uuid');
         expect(useQuizStore().currentQuizUuid).toBeNull();
+    });
+});
+
+// PmModal se rend via <Teleport to="body"> : son contenu vit hors de l'arbre
+// que wrapper.find()/wrapper.text() explorent, il faut interroger le vrai
+// document pour l'atteindre (cf. StartAccessView.test.js pour la même
+// contrainte sur ce composant).
+function findByText(selector, text) {
+    return Array.from(document.querySelectorAll(selector)).find((el) => el.textContent.trim() === text);
+}
+
+describe('DashboardView : suppression d\'un résultat', () => {
+    it('demande confirmation avant de supprimer, et n\'appelle pas l\'API en cas d\'annulation', async () => {
+        apiUsers.results.mockResolvedValue({
+            data: {
+                quiz_results: [
+                    { uuid: 'done-uuid', status: 'completed', profile_label: 'Progressiste équilibré', completed_at: '2026-01-01T00:00:00Z', created_at: '2026-01-01T00:00:00Z' },
+                ],
+            },
+        });
+
+        const wrapper = mount(DashboardView, { attachTo: document.body });
+        await flushPromises();
+
+        await wrapper.find('li button[aria-label="Supprimer ce résultat"]').trigger('click');
+        await flushPromises();
+
+        expect(document.body.textContent).toContain('Supprimer ce résultat ?');
+        expect(document.body.textContent).toContain('lien de partage');
+
+        await findByText('button', 'Annuler').click();
+        await flushPromises();
+
+        expect(apiUsers.deleteResult).not.toHaveBeenCalled();
+        expect(wrapper.text()).toContain('Progressiste équilibré');
+
+        wrapper.unmount();
+    });
+
+    it('avertit de la perte des réponses pour un quiz non terminé, distinct du message pour un résultat complet', async () => {
+        apiUsers.results.mockResolvedValue({
+            data: {
+                quiz_results: [
+                    { uuid: 'pending-uuid', status: 'pending', profile_label: null, completed_at: null, created_at: '2026-01-02T00:00:00Z' },
+                ],
+            },
+        });
+
+        const wrapper = mount(DashboardView, { attachTo: document.body });
+        await flushPromises();
+
+        await wrapper.find('li button[aria-label="Supprimer ce résultat"]').trigger('click');
+        await flushPromises();
+
+        expect(document.body.textContent).toContain('réponses déjà données');
+        expect(document.body.textContent).not.toContain('lien de partage');
+
+        wrapper.unmount();
+    });
+
+    it('supprime réellement le résultat après confirmation et le retire de la liste affichée', async () => {
+        apiUsers.results.mockResolvedValue({
+            data: {
+                quiz_results: [
+                    { uuid: 'done-uuid', status: 'completed', profile_label: 'Progressiste équilibré', completed_at: '2026-01-01T00:00:00Z', created_at: '2026-01-01T00:00:00Z' },
+                ],
+            },
+        });
+        apiUsers.deleteResult.mockResolvedValue({});
+
+        const wrapper = mount(DashboardView, { attachTo: document.body });
+        await flushPromises();
+
+        await wrapper.find('li button[aria-label="Supprimer ce résultat"]').trigger('click');
+        await flushPromises();
+
+        await findByText('button', 'Supprimer').click();
+        await flushPromises();
+
+        expect(apiUsers.deleteResult).toHaveBeenCalledWith('done-uuid');
+        expect(wrapper.text()).not.toContain('Progressiste équilibré');
+        expect(wrapper.text()).toContain('Tu n\'as pas encore fait de quiz');
+
+        wrapper.unmount();
+    });
+
+    it('vide currentQuizUuid si le quiz supprimé était le quiz actif', async () => {
+        apiUsers.results.mockResolvedValue({
+            data: {
+                quiz_results: [
+                    { uuid: 'pending-uuid', status: 'pending', profile_label: null, completed_at: null, created_at: '2026-01-02T00:00:00Z' },
+                ],
+            },
+        });
+        apiUsers.deleteResult.mockResolvedValue({});
+
+        const wrapper = mount(DashboardView, { attachTo: document.body });
+        await flushPromises();
+        useQuizStore().setQuizUuid('pending-uuid');
+
+        await wrapper.find('li button[aria-label="Supprimer ce résultat"]').trigger('click');
+        await flushPromises();
+        await findByText('button', 'Supprimer').click();
+        await flushPromises();
+
+        expect(useQuizStore().currentQuizUuid).toBeNull();
+
+        wrapper.unmount();
     });
 });

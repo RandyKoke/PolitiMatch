@@ -177,5 +177,21 @@ export const useResultsStore = defineStore('results', {
                 this.loading = false;
             }
         },
+
+        /**
+         * Retire l'entrée de `history` seulement après confirmation du
+         * serveur, jamais avant : une suppression échouée ne doit pas faire
+         * disparaître une ligne encore bien présente en base.
+         */
+        async deleteHistoryEntry(uuid) {
+            this.error = null;
+            try {
+                await apiUsers.deleteResult(uuid);
+                this.history = this.history.filter((entry) => entry.uuid !== uuid);
+            } catch (error) {
+                this.error = toUserMessage(error);
+                throw error;
+            }
+        },
     },
 });

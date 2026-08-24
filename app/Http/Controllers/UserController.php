@@ -4,11 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\User\UpdateAvatarRequest;
 use App\Models\QuizResult;
+use App\Services\QuizAccessService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
+    public function __construct(private readonly QuizAccessService $access) {}
+
     /**
      * Historique des quiz de l'utilisateur connecté (cahier des charges,
      * Module Historique). Tous les statuts sont renvoyés, pas seulement
@@ -38,5 +41,23 @@ class UserController extends Controller
         $user->update(['avatar_seed' => $request->string('avatar_seed')]);
 
         return response()->json(['user' => $user]);
+    }
+
+    /**
+     * Suppression définitive, à la demande de l'utilisateur, de l'un de ses
+     * propres résultats, quel que soit son statut (pending/computing/failed/
+     * completed) : côté tableau de bord, "Supprimer" propose la même action
+     * partout plutôt que de réserver la suppression aux résultats terminés.
+     * answers et result_party_scores disparaissent avec lui (ON DELETE
+     * CASCADE sur quiz_result_id), de même que le lien de partage éventuel,
+     * share_token n'étant qu'une colonne de quiz_results lui-même.
+     */
+    public function destroyResult(QuizResult $quizResult): JsonResponse
+    {
+        $this->access->ensureAccess($quizResult, null);
+
+        $quizResult->delete();
+
+        return response()->json(['message' => 'Résultat supprimé.']);
     }
 }

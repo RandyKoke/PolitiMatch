@@ -12,4 +12,10 @@ export const apiUsers = {
     updateAvatar(avatarSeed) {
         return apiClient.patch('/user/avatar', { avatar_seed: avatarSeed });
     },
+
+    // Suppression définitive d'un résultat depuis le tableau de bord, quel
+    // que soit son statut — nécessite une session Sanctum active.
+    deleteResult(uuid) {
+        return apiClient.delete(`/user/results/${uuid}`);
+    },
 };

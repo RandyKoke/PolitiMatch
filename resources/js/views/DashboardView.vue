@@ -38,6 +38,13 @@ const avatarModalOpen = ref(false);
 const newAvatarSeed = ref(null);
 const savingAvatar = ref(false);
 
+const deleteModalOpen = ref(false);
+const deleteTarget = ref(null);
+const deleting = ref(false);
+const deleteWarningText = computed(() => (deleteTarget.value?.status === 'completed'
+    ? "Ce résultat et son éventuel lien de partage disparaîtront définitivement. Cette action est irréversible."
+    : "Les réponses déjà données à ce quiz seront perdues. Cette action est irréversible."));
+
 function openAvatarModal() {
     newAvatarSeed.value = null;
     avatarModalOpen.value = true;
@@ -121,6 +128,35 @@ function openHistoryEntry(entry) {
     router.push(`/results/${entry.uuid}`);
 }
 
+function requestDelete(entry) {
+    deleteTarget.value = entry;
+    deleteModalOpen.value = true;
+}
+
+async function confirmDelete() {
+    if (!deleteTarget.value) {
+        return;
+    }
+
+    const uuid = deleteTarget.value.uuid;
+    deleting.value = true;
+    try {
+        await resultsStore.deleteHistoryEntry(uuid);
+        // Un quiz "pending" supprimé depuis ici ne doit plus être considéré
+        // comme actif : sans ça, le bouton principal ou une navigation vers
+        // /quiz tenterait de reprendre un QuizResult qui n'existe plus.
+        if (quizStore.currentQuizUuid === uuid) {
+            quizStore.discardCurrentQuiz();
+        }
+        deleteModalOpen.value = false;
+        uiStore.showToast('Résultat supprimé.', 'success');
+    } catch {
+        uiStore.showToast(resultsStore.error ?? 'Impossible de supprimer ce résultat.', 'error');
+    } finally {
+        deleting.value = false;
+    }
+}
+
 function formatDate(value) {
     if (!value) {
         return '';
@@ -184,9 +220,31 @@ function formatDate(value) {
                         </button>
                         <p class="text-xs text-gray-400">{{ formatDate(entry.completed_at ?? entry.created_at) }}</p>
                     </div>
-                    <PmTag v-if="statusLabels[entry.status]" :variant="statusVariants[entry.status] ?? 'neutral'">{{ statusLabels[entry.status] }}</PmTag>
+                    <div class="flex shrink-0 items-center gap-2">
+                        <PmTag v-if="statusLabels[entry.status]" :variant="statusVariants[entry.status] ?? 'neutral'">{{ statusLabels[entry.status] }}</PmTag>
+                        <button
+                            type="button"
+                            class="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-danger-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ink"
+                            aria-label="Supprimer ce résultat"
+                            @click="requestDelete(entry)"
+                        >
+                            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                                <path d="M4 6h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                                <path d="M8 6V4.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                <path d="M5.5 6l.6 9a1.5 1.5 0 0 0 1.5 1.4h4.8a1.5 1.5 0 0 0 1.5-1.4l.6-9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </button>
+                    </div>
                 </li>
             </ul>
         </PmCard>
+
+        <PmModal v-model="deleteModalOpen" title="Supprimer ce résultat ?">
+            <p class="mb-6 text-sm text-gray-600">{{ deleteWarningText }}</p>
+            <div class="flex gap-3">
+                <PmButton variant="ghost" class="flex-1" :disabled="deleting" @click="deleteModalOpen = false">Annuler</PmButton>
+                <PmButton variant="danger" class="flex-1" :loading="deleting" @click="confirmDelete">Supprimer</PmButton>
+            </div>
+        </PmModal>
     </div>
 </template>

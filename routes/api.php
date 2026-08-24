@@ -64,6 +64,7 @@ Route::get('compare', [CompareController::class, 'index']);
 Route::get('share/{token}', [ShareController::class, 'show']);
 
 Route::get('user/results', [UserController::class, 'results'])->middleware('auth:sanctum');
+Route::delete('user/results/{quizResult:uuid}', [UserController::class, 'destroyResult'])->middleware('auth:sanctum');
 Route::patch('user/avatar', [UserController::class, 'updateAvatar'])->middleware('auth:sanctum');
 
 // Public (utilisé avant la création du compte, pendant l'inscription) : pas
