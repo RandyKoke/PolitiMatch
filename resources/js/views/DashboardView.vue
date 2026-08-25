@@ -23,6 +23,7 @@ const uiStore = useUiStore();
 
 const loading = ref(true);
 const startingNew = ref(false);
+const consentChecked = ref(false);
 // Le quiz "pending" le plus récent, s'il y en a un : celui qu'un nouveau clic
 // sur le bouton principal doit reprendre plutôt qu'abandonner au profit d'un
 // nouveau QuizResult. loadHistory() trie déjà par created_at décroissant.
@@ -183,7 +184,27 @@ function formatDate(value) {
                     Changer mon avatar
                 </button>
             </div>
-            <PmButton class="mt-4 w-full" :loading="startingNew" @click="startNewQuiz">{{ startQuizLabel }}</PmButton>
+            <div v-if="!pendingHistoryEntry" class="mt-4 rounded-xl border border-gray-100 bg-gray-50 p-3">
+                <label class="flex cursor-pointer items-start gap-2 text-xs text-gray-600">
+                    <input
+                        v-model="consentChecked"
+                        type="checkbox"
+                        class="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 accent-bordeaux-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                    >
+                    <span>
+                        J'accepte que mes réponses à ce quiz (des opinions politiques, une catégorie de données
+                        protégée par le RGPD) soient enregistrées. Je peux les supprimer à tout moment ci-dessous.
+                    </span>
+                </label>
+            </div>
+            <PmButton
+                class="mt-4 w-full"
+                :loading="startingNew"
+                :disabled="!pendingHistoryEntry && !consentChecked"
+                @click="startNewQuiz"
+            >
+                {{ startQuizLabel }}
+            </PmButton>
         </PmCard>
 
         <PmModal v-model="avatarModalOpen" title="Changer mon avatar">

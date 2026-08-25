@@ -19,6 +19,7 @@ const existingQuizState = ref(null);
 const checkingExisting = ref(true);
 const startingGuest = ref(false);
 const showRestartConfirm = ref(false);
+const consentChecked = ref(false);
 
 onMounted(async () => {
     if (!quizStore.currentQuizUuid) {
@@ -108,8 +109,36 @@ function confirmRestart() {
                 ton historique. Rien n'est perdu si tu commences en invité.
             </p>
 
+            <div class="mb-6 rounded-xl border border-gray-100 bg-gray-50 p-4">
+                <h2 class="mb-1 text-sm font-semibold text-ink">Une précision nécessaire avant de commencer</h2>
+                <p class="mb-3 text-sm text-gray-600">
+                    Ce quiz te demande ton avis sur des sujets politiques. La loi (le RGPD) classe ce type d'information
+                    dans une catégorie à part, au même titre que la santé ou les convictions religieuses, parce qu'elle
+                    peut te désavantager si elle tombe entre de mauvaises mains. Concrètement, ça veut dire qu'on n'a pas
+                    le droit d'enregistrer tes réponses sans ton accord explicite : ce n'est pas une case à cocher pour
+                    la forme, c'est une condition légale pour que le quiz puisse fonctionner.
+                </p>
+                <p class="mb-3 text-sm text-gray-600">
+                    En contrepartie, tu gardes le contrôle : tu peux supprimer ton résultat, et donc tes réponses, à
+                    tout moment depuis ton tableau de bord.
+                </p>
+                <label class="flex cursor-pointer items-start gap-2 text-sm text-gray-700">
+                    <input
+                        v-model="consentChecked"
+                        type="checkbox"
+                        class="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 accent-bordeaux-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                    >
+                    <span>
+                        Je confirme avoir au moins 13 ans (âge minimum fixé par la loi belge pour ce type de consentement)
+                        et j'accepte que mes réponses à ce quiz soient enregistrées.
+                    </span>
+                </label>
+            </div>
+
             <div class="flex flex-col gap-3">
-                <PmButton size="lg" :loading="startingGuest" @click="startGuestQuiz">Continuer en invité</PmButton>
+                <PmButton size="lg" :loading="startingGuest" :disabled="!consentChecked" @click="startGuestQuiz">
+                    Continuer en invité
+                </PmButton>
                 <PmButton variant="secondary" size="lg" :disabled="startingGuest" @click="router.push('/auth/register')">
                     Créer un compte
                 </PmButton>

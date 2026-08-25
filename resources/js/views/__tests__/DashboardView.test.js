@@ -100,6 +100,38 @@ describe('DashboardView : libellé du bouton de démarrage selon l\'historique',
     });
 });
 
+describe('DashboardView : consentement RGPD avant un nouveau quiz', () => {
+    it('désactive le bouton tant que le consentement n\'est pas coché pour un nouveau quiz', async () => {
+        apiUsers.results.mockResolvedValue({ data: { quiz_results: [] } });
+
+        const wrapper = mount(DashboardView);
+        await flushPromises();
+
+        const startButton = wrapper.find('button.mt-4.w-full');
+        expect(startButton.attributes('disabled')).toBeDefined();
+
+        await wrapper.find('input[type="checkbox"]').setValue(true);
+
+        expect(startButton.attributes('disabled')).toBeUndefined();
+    });
+
+    it('ne demande pas de nouveau consentement pour reprendre un quiz déjà en cours', async () => {
+        apiUsers.results.mockResolvedValue({
+            data: {
+                quiz_results: [
+                    { uuid: 'pending-uuid', status: 'pending', profile_label: null, completed_at: null, created_at: '2026-01-02T00:00:00Z' },
+                ],
+            },
+        });
+
+        const wrapper = mount(DashboardView);
+        await flushPromises();
+
+        expect(wrapper.find('input[type="checkbox"]').exists()).toBe(false);
+        expect(wrapper.find('button.mt-4.w-full').attributes('disabled')).toBeUndefined();
+    });
+});
+
 describe('DashboardView : reprise d\'un quiz déjà en cours', () => {
     it('propose "Reprendre le quiz" et navigue vers /quiz sans créer un nouveau QuizResult', async () => {
         apiUsers.results.mockResolvedValue({

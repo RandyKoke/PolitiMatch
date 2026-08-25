@@ -39,6 +39,18 @@ describe('StartAccessView', () => {
      * la carte active + <PmModal>, à cause du nœud ancre laissé par son
      * Teleport) avant de le restaurer.
      */
+    it('disables "Continuer en invité" tant que le consentement RGPD n\'est pas coché, puis l\'active', async () => {
+        const wrapper = mount(StartAccessView);
+        await flushPromises();
+
+        const startButton = wrapper.findAll('button').find((b) => b.text() === 'Continuer en invité');
+        expect(startButton.attributes('disabled')).toBeDefined();
+
+        await wrapper.find('input[type="checkbox"]').setValue(true);
+
+        expect(startButton.attributes('disabled')).toBeUndefined();
+    });
+
     it('renders as a single real root node, not a multi-root fragment (PmModal must not be a sibling)', async () => {
         const wrapper = mount(StartAccessView);
         await flushPromises();
