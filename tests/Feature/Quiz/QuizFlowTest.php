@@ -2,9 +2,11 @@
 
 namespace Tests\Feature\Quiz;
 
+use App\Http\Controllers\QuizController;
 use App\Models\Party;
 use App\Models\PartyPosition;
 use App\Models\Question;
+use App\Models\QuizResult;
 use App\Models\Theme;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -61,7 +63,7 @@ class QuizFlowTest extends TestCase
 
     public function test_full_guest_flow_from_start_to_results(): void
     {
-        $start = $this->postJson('/api/quiz/start');
+        $start = $this->postJson('/api/quiz/start', $this->validConsentPayload());
         $start->assertStatus(201)->assertJsonStructure(['quiz_result_uuid', 'session_token']);
 
         $uuid = $start->json('quiz_result_uuid');
@@ -95,7 +97,7 @@ class QuizFlowTest extends TestCase
         // attendu plutôt qu'un libellé forcé sur trop peu de signal.
         $this->assertSame('Profil politique à préciser', $complete->json('profile_label'));
 
-        $results = $this->getJson("/api/results/{$uuid}");
+        $results = $this->getJson("/api/results/{$uuid}?session_token={$sessionToken}");
         $results->assertStatus(200)->assertJsonCount(2, 'party_scores');
         $this->assertSame('Profil politique à préciser', $results->json('profile_label'));
         $this->assertNotNull($results->json('profile_description'));
@@ -105,7 +107,7 @@ class QuizFlowTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $start = $this->actingAs($user)->postJson('/api/quiz/start');
+        $start = $this->actingAs($user)->postJson('/api/quiz/start', $this->validConsentPayload());
         $start->assertStatus(201);
         $uuid = $start->json('quiz_result_uuid');
         $this->assertNull($start->json('session_token'));
@@ -125,7 +127,7 @@ class QuizFlowTest extends TestCase
 
     public function test_a_guest_cannot_answer_another_guests_quiz(): void
     {
-        $start = $this->postJson('/api/quiz/start');
+        $start = $this->postJson('/api/quiz/start', $this->validConsentPayload());
         $uuid = $start->json('quiz_result_uuid');
 
         $this->postJson('/api/answers', [
@@ -151,7 +153,7 @@ class QuizFlowTest extends TestCase
      */
     public function test_answering_the_same_question_twice_never_errors_and_keeps_the_latest_value(): void
     {
-        $start = $this->postJson('/api/quiz/start');
+        $start = $this->postJson('/api/quiz/start', $this->validConsentPayload());
         $uuid = $start->json('quiz_result_uuid');
         $sessionToken = $start->json('session_token');
         $questionId = $this->questions[0]->id;
@@ -179,7 +181,7 @@ class QuizFlowTest extends TestCase
 
     public function test_completing_an_unfinished_quiz_is_rejected(): void
     {
-        $start = $this->postJson('/api/quiz/start');
+        $start = $this->postJson('/api/quiz/start', $this->validConsentPayload());
         $uuid = $start->json('quiz_result_uuid');
         $sessionToken = $start->json('session_token');
 
@@ -194,5 +196,35 @@ class QuizFlowTest extends TestCase
             'quiz_result_uuid' => $uuid,
             'session_token' => $sessionToken,
         ])->assertStatus(422);
+    }
+
+    public function test_starting_a_quiz_without_consent_is_rejected(): void
+    {
+        $this->postJson('/api/quiz/start', [])->assertStatus(422);
+        $this->postJson('/api/quiz/start', ['consent' => false, 'consent_version' => QuizController::CURRENT_CONSENT_VERSION])
+            ->assertStatus(422);
+    }
+
+    public function test_starting_a_quiz_with_a_stale_consent_version_is_rejected(): void
+    {
+        $this->postJson('/api/quiz/start', [
+            'consent' => true,
+            'consent_version' => 'une-vieille-version-perimee',
+        ])->assertStatus(422);
+    }
+
+    public function test_starting_a_quiz_records_the_consent_given_at_and_its_version(): void
+    {
+        $start = $this->postJson('/api/quiz/start', $this->validConsentPayload());
+        $start->assertStatus(201);
+
+        $this->assertDatabaseHas('quiz_results', [
+            'uuid' => $start->json('quiz_result_uuid'),
+            'consent_version' => QuizController::CURRENT_CONSENT_VERSION,
+        ]);
+
+        $quizResult = QuizResult::where('uuid', $start->json('quiz_result_uuid'))->firstOrFail();
+        $this->assertNotNull($quizResult->consent_given_at);
+        $this->assertTrue($quizResult->consent_given_at->greaterThan(now()->subMinute()));
     }
 }

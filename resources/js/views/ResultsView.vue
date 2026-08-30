@@ -246,9 +246,12 @@ function scorePercent(score) {
                  est entièrement géré par le navigateur via le
                  Content-Disposition: attachment renvoyé par l'API
                  (ResultController::downloadImage), aucune dépendance
-                 frontend supplémentaire nécessaire. -->
+                 frontend supplémentaire nécessaire. session_token en query
+                 string (pas un header, un <a> ne permet pas d'en ajouter) :
+                 nécessaire depuis que downloadImage vérifie la propriété
+                 pour un résultat pas encore partagé (cf. ResultController). -->
             <a
-                :href="`/api/results/${route.params.uuid}/download-image`"
+                :href="`/api/results/${route.params.uuid}/download-image${authStore.sessionToken ? '?session_token=' + authStore.sessionToken : ''}`"
                 class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-50 px-6 py-3 text-lg font-medium text-ink transition-[color,background-color,box-shadow,transform] duration-200 ease-out hover:bg-brand-100 active:bg-brand-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             >
                 Télécharger mon résultat

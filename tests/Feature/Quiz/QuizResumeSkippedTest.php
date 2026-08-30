@@ -143,7 +143,7 @@ class QuizResumeSkippedTest extends TestCase
         ]);
         $complete->assertStatus(200);
 
-        $results = $this->getJson("/api/results/{$quizResult->uuid}");
+        $results = $this->getJson("/api/results/{$quizResult->uuid}?session_token={$sessionToken}");
         $results->assertStatus(200)
             ->assertJsonPath('reliability.state', 'full')
             ->assertJsonPath('reliability.real_answers_count', 30)
@@ -174,7 +174,7 @@ class QuizResumeSkippedTest extends TestCase
             $questions[] = $question;
         }
 
-        $start = $this->postJson('/api/quiz/start');
+        $start = $this->postJson('/api/quiz/start', $this->validConsentPayload());
         $uuid = $start->json('quiz_result_uuid');
         $sessionToken = $start->json('session_token');
 
@@ -198,7 +198,7 @@ class QuizResumeSkippedTest extends TestCase
         $firstComplete->assertStatus(200);
         $this->assertDatabaseCount('result_party_scores', 1);
 
-        $firstResults = $this->getJson("/api/results/{$uuid}");
+        $firstResults = $this->getJson("/api/results/{$uuid}?session_token={$sessionToken}");
         $firstResults->assertStatus(200)->assertJsonPath('reliability.state', 'too_few');
 
         // Reprise ciblée puis réponse réelle aux 20 questions passées.
@@ -222,7 +222,7 @@ class QuizResumeSkippedTest extends TestCase
         ]);
         $secondComplete->assertStatus(200);
 
-        $secondResults = $this->getJson("/api/results/{$uuid}");
+        $secondResults = $this->getJson("/api/results/{$uuid}?session_token={$sessionToken}");
         $secondResults->assertStatus(200)
             ->assertJsonPath('reliability.state', 'full')
             ->assertJsonCount(1, 'party_scores');

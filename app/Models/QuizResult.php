@@ -15,6 +15,7 @@ use Illuminate\Support\Str;
     'user_id', 'session_token', 'status', 'completed_at', 'share_token',
     'is_shared', 'political_axis_x', 'political_axis_y',
     'profile_label', 'profile_description',
+    'consent_given_at', 'consent_version',
 ])]
 class QuizResult extends Model
 {
@@ -33,6 +34,7 @@ class QuizResult extends Model
         return [
             'status' => QuizResultStatus::class,
             'completed_at' => 'datetime',
+            'consent_given_at' => 'datetime',
             'is_shared' => 'boolean',
             'political_axis_x' => 'decimal:2',
             'political_axis_y' => 'decimal:2',
@@ -70,8 +72,9 @@ class QuizResult extends Model
 
     /**
      * Forme de réponse JSON partagée par ResultController::show (accès
-     * privé par possession de l'UUID) et ShareController::show (accès
-     * public par share_token) : un seul endroit qui décide de ce qui est
+     * privé réservé au propriétaire, vérifié via QuizAccessService) et
+     * ShareController::show (accès public par share_token) : un seul
+     * endroit qui décide de ce qui est
      * exposé pour un résultat, pour que les deux ne divergent jamais
      * silencieusement l'un de l'autre. Suppose `answers` et
      * `resultPartyScores.party` déjà eager-loadés (scopeWithFullQuizData)

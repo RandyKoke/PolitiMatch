@@ -6,6 +6,7 @@ use App\Enums\QuizResultStatus;
 use App\Http\Requests\Quiz\CompleteQuizRequest;
 use App\Http\Requests\Quiz\QuizStateRequest;
 use App\Http\Requests\Quiz\RetryQuizRequest;
+use App\Http\Requests\Quiz\StartQuizRequest;
 use App\Http\Requests\Quiz\StoreAnswerRequest;
 use App\Models\Answer;
 use App\Models\GuestSession;
@@ -32,6 +33,16 @@ class QuizController extends Controller
     // inutilement le confort d'un visiteur qui reviendrait plusieurs jours
     // plus tard sans compte.
     private const GUEST_SESSION_LIFETIME_DAYS = 30;
+
+    // Identifiant de la version actuelle du texte de consentement affiché
+    // dans StartAccessView.vue et DashboardView.vue (bloc RGPD Art. 9). À
+    // incrémenter (ex. '2026-09-15-v2') à chaque modification substantielle
+    // de ce texte : StartQuizRequest rejette alors tout consentement donné
+    // sur une version différente, pour ne jamais faire correspondre un
+    // consentement à un texte que l'utilisateur n'a pas réellement vu.
+    // Volontairement public : StartQuizRequest s'y réfère directement,
+    // plutôt que de dupliquer cette valeur.
+    public const CURRENT_CONSENT_VERSION = '2026-08-30-v1';
 
     public function __construct(
         private readonly AnswerRepository $answers,
@@ -79,11 +90,22 @@ class QuizController extends Controller
     /**
      * Démarre un quiz : GuestSession + QuizResult pour un visiteur anonyme,
      * ou simple QuizResult rattaché au compte pour un utilisateur connecté.
+     *
+     * consent/consent_version (StartQuizRequest) : preuve du consentement
+     * RGPD Art. 9 exigé pour traiter une opinion politique, enregistrée sur
+     * le QuizResult lui-même plutôt que sur GuestSession ou User, puisque
+     * c'est ce résultat précis qui porte la donnée sensible concernée, quel
+     * que soit le chemin (invité ou déjà connecté) qui y mène.
      */
-    public function start(): JsonResponse
+    public function start(StartQuizRequest $request): JsonResponse
     {
+        $consentData = [
+            'consent_given_at' => now(),
+            'consent_version' => $request->validated('consent_version'),
+        ];
+
         if (Auth::check()) {
-            $quizResult = QuizResult::create(['user_id' => Auth::id()]);
+            $quizResult = QuizResult::create([...$consentData, 'user_id' => Auth::id()]);
 
             return response()->json([
                 'quiz_result_uuid' => $quizResult->uuid,
@@ -95,7 +117,7 @@ class QuizController extends Controller
             'expires_at' => now()->addDays(self::GUEST_SESSION_LIFETIME_DAYS),
         ]);
 
-        $quizResult = QuizResult::create(['session_token' => $guestSession->session_token]);
+        $quizResult = QuizResult::create([...$consentData, 'session_token' => $guestSession->session_token]);
 
         return response()->json([
             'quiz_result_uuid' => $quizResult->uuid,

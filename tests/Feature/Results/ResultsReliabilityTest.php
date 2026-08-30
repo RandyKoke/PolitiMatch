@@ -66,7 +66,7 @@ class ResultsReliabilityTest extends TestCase
     {
         $quizResult = $this->completedQuizWith(0, 30);
 
-        $response = $this->getJson("/api/results/{$quizResult->uuid}");
+        $response = $this->getJson("/api/results/{$quizResult->uuid}?session_token={$quizResult->session_token}");
 
         $response->assertStatus(200)
             ->assertJsonPath('reliability.state', 'empty')
@@ -80,7 +80,7 @@ class ResultsReliabilityTest extends TestCase
     {
         $quizResult = $this->completedQuizWith(14, 16);
 
-        $response = $this->getJson("/api/results/{$quizResult->uuid}");
+        $response = $this->getJson("/api/results/{$quizResult->uuid}?session_token={$quizResult->session_token}");
 
         $response->assertStatus(200)
             ->assertJsonPath('reliability.state', 'too_few')
@@ -93,7 +93,7 @@ class ResultsReliabilityTest extends TestCase
     {
         $quizResult = $this->completedQuizWith(15, 15);
 
-        $response = $this->getJson("/api/results/{$quizResult->uuid}");
+        $response = $this->getJson("/api/results/{$quizResult->uuid}?session_token={$quizResult->session_token}");
 
         $response->assertStatus(200)
             ->assertJsonPath('reliability.state', 'partial')
@@ -106,7 +106,7 @@ class ResultsReliabilityTest extends TestCase
     {
         $quizResult = $this->completedQuizWith(29, 1);
 
-        $response = $this->getJson("/api/results/{$quizResult->uuid}");
+        $response = $this->getJson("/api/results/{$quizResult->uuid}?session_token={$quizResult->session_token}");
 
         $response->assertStatus(200)
             ->assertJsonPath('reliability.state', 'partial')
@@ -118,7 +118,7 @@ class ResultsReliabilityTest extends TestCase
     {
         $quizResult = $this->completedQuizWith(30, 0);
 
-        $response = $this->getJson("/api/results/{$quizResult->uuid}");
+        $response = $this->getJson("/api/results/{$quizResult->uuid}?session_token={$quizResult->session_token}");
 
         $response->assertStatus(200)
             ->assertJsonPath('reliability.state', 'full')

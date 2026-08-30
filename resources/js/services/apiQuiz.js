@@ -5,10 +5,17 @@ export const apiQuiz = {
         return apiClient.get('/questions');
     },
 
-    async start() {
+    // consentVersion : identifiant de la version du texte de consentement
+    // RGPD affiché (cf. QuizController::CURRENT_CONSENT_VERSION côté
+    // backend, seule source de vérité) — jamais accepté si différent de la
+    // version actuellement attendue par le serveur.
+    async start(consentVersion) {
         await ensureCsrfCookie();
 
-        return apiClient.post('/quiz/start');
+        return apiClient.post('/quiz/start', {
+            consent: true,
+            consent_version: consentVersion,
+        });
     },
 
     /**

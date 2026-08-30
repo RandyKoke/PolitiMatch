@@ -10,6 +10,12 @@ import { useResultsStore } from '@/stores/resultsStore';
 // store le lit plutôt que de le dupliquer.
 const QUIZ_UUID_STORAGE_KEY = 'politimatch.quiz_result_uuid';
 
+// Doit rester strictement identique à QuizController::CURRENT_CONSENT_VERSION
+// (seule source de vérité côté serveur, qui rejette toute autre valeur) : à
+// mettre à jour ici aussi si le texte de consentement RGPD affiché dans
+// StartAccessView.vue / DashboardView.vue change un jour.
+const CONSENT_VERSION = '2026-08-30-v1';
+
 export const useQuizStore = defineStore('quiz', {
     state: () => ({
         currentQuizUuid: localStorage.getItem(QUIZ_UUID_STORAGE_KEY),
@@ -102,7 +108,7 @@ export const useQuizStore = defineStore('quiz', {
             this.loading = true;
             this.error = null;
             try {
-                const { data } = await apiQuiz.start();
+                const { data } = await apiQuiz.start(CONSENT_VERSION);
                 this.setQuizUuid(data.quiz_result_uuid);
                 if (data.session_token) {
                     useAuthStore().setSessionToken(data.session_token);

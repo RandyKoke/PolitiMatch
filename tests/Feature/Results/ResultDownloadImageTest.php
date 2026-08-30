@@ -65,7 +65,7 @@ class ResultDownloadImageTest extends TestCase
     {
         $quizResult = $this->completedQuizWith(QuizReliabilityService::MIN_RELIABLE_ANSWERS);
 
-        $response = $this->get("/api/results/{$quizResult->uuid}/download-image");
+        $response = $this->get("/api/results/{$quizResult->uuid}/download-image?session_token={$quizResult->session_token}");
 
         $response->assertOk();
         $response->assertHeader('Content-Type', 'image/png');
@@ -80,7 +80,7 @@ class ResultDownloadImageTest extends TestCase
         $this->assertNull($quizResult->share_token);
         $this->assertFalse($quizResult->is_shared);
 
-        $response = $this->get("/api/results/{$quizResult->uuid}/download-image");
+        $response = $this->get("/api/results/{$quizResult->uuid}/download-image?session_token={$quizResult->session_token}");
 
         $response->assertOk();
         // Le téléchargement ne doit jamais activer le partage public comme
@@ -98,7 +98,7 @@ class ResultDownloadImageTest extends TestCase
             'status' => QuizResultStatus::Pending,
         ]);
 
-        $response = $this->get("/api/results/{$quizResult->uuid}/download-image");
+        $response = $this->get("/api/results/{$quizResult->uuid}/download-image?session_token={$quizResult->session_token}");
 
         $response->assertStatus(409);
     }
@@ -107,7 +107,7 @@ class ResultDownloadImageTest extends TestCase
     {
         $quizResult = $this->completedQuizWith(QuizReliabilityService::MIN_RELIABLE_ANSWERS - 1);
 
-        $response = $this->get("/api/results/{$quizResult->uuid}/download-image");
+        $response = $this->get("/api/results/{$quizResult->uuid}/download-image?session_token={$quizResult->session_token}");
 
         $response->assertStatus(409);
     }
@@ -117,5 +117,24 @@ class ResultDownloadImageTest extends TestCase
         $response = $this->get('/api/results/00000000-0000-0000-0000-000000000000/download-image');
 
         $response->assertStatus(404);
+    }
+
+    public function test_returns_403_without_the_owning_session_token_for_an_unshared_result(): void
+    {
+        $quizResult = $this->completedQuizWith(QuizReliabilityService::MIN_RELIABLE_ANSWERS);
+
+        $response = $this->get("/api/results/{$quizResult->uuid}/download-image");
+
+        $response->assertStatus(403);
+    }
+
+    public function test_is_downloadable_without_a_session_token_once_shared(): void
+    {
+        $quizResult = $this->completedQuizWith(QuizReliabilityService::MIN_RELIABLE_ANSWERS);
+        $quizResult->update(['share_token' => 'a1b2c3d4-e5f6-4789-a012-3456789abcde', 'is_shared' => true]);
+
+        $response = $this->get("/api/results/{$quizResult->uuid}/download-image");
+
+        $response->assertOk();
     }
 }

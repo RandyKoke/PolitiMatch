@@ -2,11 +2,28 @@
 
 namespace Tests;
 
+use App\Http\Controllers\QuizController;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\Cache;
 
 abstract class TestCase extends BaseTestCase
 {
+    /**
+     * Corps de requête minimal et valide pour POST /api/quiz/start depuis
+     * que StartQuizRequest exige un consentement RGPD explicite : centralisé
+     * ici pour que tous les tests restent corrects si
+     * QuizController::CURRENT_CONSENT_VERSION change un jour.
+     *
+     * @return array<string, mixed>
+     */
+    protected function validConsentPayload(): array
+    {
+        return [
+            'consent' => true,
+            'consent_version' => QuizController::CURRENT_CONSENT_VERSION,
+        ];
+    }
+
     protected function setUp(): void
     {
         parent::setUp();

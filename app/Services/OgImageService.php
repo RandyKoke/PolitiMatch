@@ -102,10 +102,13 @@ class OgImageService
     /**
      * Pendant privé du couple relativePath()/ensureGenerated() ci-dessus,
      * pour la carte de résultat téléchargeable : même moteur de rendu
-     * (render() ci-dessous, partagé sans duplication), mais jamais
-     * conditionné à un partage actif, et jamais exposé via asset() (chemin
-     * absolu disque uniquement, le contrôleur appelant renvoie le fichier
-     * lui-même avec un Content-Disposition: attachment).
+     * (render() ci-dessous, partagé sans duplication). La génération du
+     * fichier lui-même ne dépend jamais d'un partage actif (ResultController
+     * peut l'appeler pour le propriétaire d'un résultat non partagé) ; c'est
+     * ResultController::downloadImage qui décide, en amont, qui a le droit
+     * de déclencher cet appel. Jamais exposé via asset() (chemin absolu
+     * disque uniquement, le contrôleur appelant renvoie le fichier lui-même
+     * avec un Content-Disposition: attachment).
      */
     public function ensureDownloadImageGenerated(QuizResult $quizResult): ?string
     {

@@ -67,7 +67,7 @@ export const useResultsStore = defineStore('results', {
             this.error = null;
             this.notReadyStatus = null;
             try {
-                const { data } = await apiResults.show(uuid);
+                const { data } = await apiResults.show(uuid, useAuthStore().sessionToken);
                 this.applyResultPayload(data);
 
                 return data;
