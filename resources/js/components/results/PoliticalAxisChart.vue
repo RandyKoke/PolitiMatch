@@ -60,13 +60,15 @@ const partyPoints = computed(() => props.parties
 const showScatter = computed(() => partyPoints.value.length > 0 || hasBoth.value);
 const hasNoDataAtAll = computed(() => !showScatter.value && x.value === null && y.value === null);
 
-// Couleur bordeaux (accent secondaire de la direction artistique, jamais
-// l'or : l'or est trop proche, en famille de teinte, des couleurs de DéFI
-// et Les Engagés pour rester un repère fiable sur ce graphique précis).
-// Volontairement neutre et non partisane, vérifiée distincte des 6 couleurs
-// de partis en base : "Toi" reste ainsi identifiable sans ambiguïté avec un
-// point de parti.
-const USER_COLOR = '#62273b';
+// Ni l'or (trop proche, en famille de teinte, des couleurs de DéFI et Les
+// Engagés) ni le bordeaux (trop proche, en teinte comme en luminosité, du
+// rouge du PS et du rouge foncé du PTB : les trois se confondent en pratique
+// sur ce graphique, un retour de relecture externe l'a confirmé) ne
+// conviennent ici. --color-ink (noir profond) est la seule teinte du système
+// de design qui reste hors de toute famille de couleur de parti, quel que
+// soit le nombre de partis affichés : "Toi" reste ainsi identifiable sans
+// ambiguïté avec un point de parti.
+const USER_COLOR = '#1a1a1a';
 
 const chartData = computed(() => ({
     datasets: [
@@ -295,7 +297,7 @@ const pointLabelsPlugin = {
             ctx.lineWidth = 3;
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
             ctx.strokeText(text, point.x + drawDx, point.y + drawDy);
-            ctx.fillStyle = dataset.isUser ? '#62273b' : '#374151';
+            ctx.fillStyle = dataset.isUser ? '#1a1a1a' : '#374151';
             ctx.fillText(text, point.x + drawDx, point.y + drawDy);
         });
 
@@ -447,12 +449,12 @@ function gaugePercent(value) {
             </div>
 
             <!-- Légende : nom complet + couleur pour chaque parti, et une entrée
-                 "Toi" (triangle bordeaux, même forme que sur le graphique) quand la
-                 position de l'utilisateur est affichée. Complète les étiquettes
+                 "Toi" (triangle noir encre, même forme que sur le graphique) quand
+                 la position de l'utilisateur est affichée. Complète les étiquettes
                  courtes sur le graphique lui-même. -->
             <div class="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-stone-200 pt-3 text-xs text-gray-600">
-                <div v-if="hasBoth" class="flex items-center gap-1.5 font-semibold text-bordeaux-700">
-                    <svg viewBox="0 0 24 24" class="h-3.5 w-3.5 fill-bordeaux-600" aria-hidden="true">
+                <div v-if="hasBoth" class="flex items-center gap-1.5 font-semibold text-ink">
+                    <svg viewBox="0 0 24 24" class="h-3.5 w-3.5 fill-ink" aria-hidden="true">
                         <path d="M12 3l9 18H3z" />
                     </svg>
                     Toi
@@ -484,7 +486,7 @@ function gaugePercent(value) {
                 </div>
                 <div class="relative h-2 rounded-full bg-stone-100">
                     <div
-                        class="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-bordeaux-600"
+                        class="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-ink"
                         :style="{ left: `calc(${gaugePercent(x)}% - 6px)` }"
                     />
                 </div>
@@ -495,7 +497,7 @@ function gaugePercent(value) {
                 </div>
                 <div class="relative h-2 rounded-full bg-stone-100">
                     <div
-                        class="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-bordeaux-600"
+                        class="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-ink"
                         :style="{ left: `calc(${gaugePercent(y)}% - 6px)` }"
                     />
                 </div>

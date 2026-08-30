@@ -39,7 +39,10 @@ export const routes = [
         path: '/compare/:uuid',
         name: 'compare',
         component: () => import('@/views/CompareView.vue'),
-        meta: { requiresQuizUuid: true },
+        // wide : le tableau du comparateur (question + 6 partis) tire un vrai
+        // bénéfice de la largeur disponible sur tablette/PC, contrairement au
+        // reste de l'app volontairement contenu en max-w-lg (cf. AppLayout).
+        meta: { requiresQuizUuid: true, wide: true },
     },
     // Annuaire public (sans contexte de quiz), et fiche détaillée derrière —
     // volontairement enregistrée avant '/parties/:id' pour la lisibilité,

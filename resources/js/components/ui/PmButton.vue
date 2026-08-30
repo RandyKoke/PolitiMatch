@@ -34,7 +34,7 @@ const variantClasses = {
     // "primary" (plein) vs "secondary" (clair) ailleurs dans l'app, pas un
     // nouveau langage visuel.
     agree: 'border-2 border-vote-agree bg-vote-agree-bg text-vote-agree hover:bg-green-100 disabled:opacity-50',
-    'agree-strong': 'bg-vote-agree text-white hover:bg-green-700 active:bg-green-800 disabled:opacity-50',
+    'agree-strong': 'bg-vote-agree text-white hover:bg-green-800 active:bg-green-900 disabled:opacity-50',
     disagree: 'border-2 border-vote-disagree bg-vote-disagree-bg text-vote-disagree hover:bg-red-100 disabled:opacity-50',
     'disagree-strong': 'bg-vote-disagree text-white hover:bg-red-700 active:bg-red-800 disabled:opacity-50',
     'neutral-vote': 'border-2 border-vote-neutral bg-vote-neutral-bg text-vote-neutral hover:bg-gray-100 disabled:opacity-50',

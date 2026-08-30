@@ -1,4 +1,6 @@
 <script setup>
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useUiStore } from '@/stores/uiStore';
 import TopBar from '@/components/layout/TopBar.vue';
@@ -7,16 +9,22 @@ import PmLoader from '@/components/ui/PmLoader.vue';
 
 const uiStore = useUiStore();
 const { globalLoading } = storeToRefs(uiStore);
+
+const route = useRoute();
+// max-w-lg partout par défaut : contenu centré mobile-first (cahier des
+// charges §7.1), sans jamais devenir une mise en page "bureau" à trois
+// colonnes. Exception ciblée via route.meta.wide (cf. router/index.js) pour
+// les vues dont le contenu tabulaire tire un vrai bénéfice de la largeur
+// disponible sur tablette/PC (le comparateur, par exemple) : élargi
+// seulement à partir du palier tablette (md), jamais sur mobile.
+const mainWidthClass = computed(() => (route.meta.wide ? 'max-w-lg md:max-w-4xl' : 'max-w-lg'));
 </script>
 
 <template>
     <div class="flex min-h-screen flex-col bg-cream">
         <TopBar />
 
-        <!-- max-w-lg : contenu centré mobile-first (cahier des charges §7.1),
-             s'élargit sobrement sur desktop sans jamais devenir une mise en
-             page "bureau" à trois colonnes. -->
-        <main class="mx-auto w-full max-w-lg flex-1 px-4 py-6">
+        <main class="mx-auto w-full flex-1 px-4 py-6" :class="mainWidthClass">
             <router-view v-slot="{ Component, route }">
                 <Transition name="pm-view-fade" mode="out-in">
                     <component :is="Component" :key="route.path" />

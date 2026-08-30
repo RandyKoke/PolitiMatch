@@ -77,7 +77,14 @@
     --color-bordeaux-800: #371521;
     --color-bordeaux-900: #250e16;
 
-    --color-vote-agree: #16a34a;
+    /*
+     * vote-agree assombri de #16a34a vers #15803d : à luminance perçue égale
+     * (0.299R+0.587G+0.114B), le vert d'origine (≈111) était ~20% plus
+     * lumineux que vote-disagree (≈92), donnant un curseur d'accord/désaccord
+     * visuellement déséquilibré. #15803d ramène le vert à ≈88, au même
+     * niveau perçu que le rouge.
+     */
+    --color-vote-agree: #15803d;
     --color-vote-agree-bg: #f0fdf4;
     --color-vote-disagree: #dc2626;
     --color-vote-disagree-bg: #fef2f2;
