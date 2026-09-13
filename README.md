@@ -4,9 +4,9 @@ Application web d'aide au vote destinée aux jeunes électeurs francophones belg
 
 ## Contexte du projet
 
-PolitiMatch est le travail de fin d'études (épreuve intégrée) de Randy Koke Mpuki, réalisé dans le cadre du bachelier en informatique, option développement d'applications. Le projet couvre l'ensemble du cycle de développement d'une application web, de l'élaboration du cahier des charges jusqu'à la mise en production.
+PolitiMatch est mon travail de fin d'études (épreuve intégrée), réalisé dans le cadre de mon bachelier en informatique, option développement d'applications. J'ai couvert l'ensemble du cycle de développement de cette application web, de l'élaboration du cahier des charges jusqu'à la mise en production.
 
-Le contenu politique de l'application (formulation des questions, positionnement de chaque parti, fiches descriptives) a été rédigé et validé par un expert externe en sciences politiques. L'auteur du projet n'est intervenu que sur l'intégration technique de ce contenu, jamais sur son fond, afin de garantir la neutralité de l'outil.
+Le contenu politique de l'application (formulation des questions, positionnement de chaque parti, fiches descriptives) a été rédigé et validé par un expert externe en sciences politiques. Je ne suis intervenu que sur l'intégration technique de ce contenu, jamais sur son fond, afin de garantir la neutralité de l'outil.
 
 ## Fonctionnement
 
