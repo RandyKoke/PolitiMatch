@@ -1,58 +1,138 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# PolitiMatch
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Application web d'aide au vote destinée aux jeunes électeurs francophones belges. L'utilisateur répond à une série de questions sur des enjeux politiques belges actuels et découvre, à l'issue du quiz, quel parti politique correspond le mieux à ses propres positions, ainsi qu'un profil politique personnalisé.
 
-## About Laravel
+## Contexte du projet
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+PolitiMatch est le travail de fin d'études (épreuve intégrée) de Randy Koke Mpuki, réalisé dans le cadre du bachelier en informatique, option développement d'applications. Le projet couvre l'ensemble du cycle de développement d'une application web, de l'élaboration du cahier des charges jusqu'à la mise en production.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Le contenu politique de l'application (formulation des questions, positionnement de chaque parti, fiches descriptives) a été rédigé et validé par un expert externe en sciences politiques. L'auteur du projet n'est intervenu que sur l'intégration technique de ce contenu, jamais sur son fond, afin de garantir la neutralité de l'outil.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Fonctionnement
 
-## Learning Laravel
+1. L'utilisateur répond à un questionnaire de 30 questions, réparties en 5 thématiques : Économie, Environnement, Social, Immigration et Société.
+2. Chaque réponse est comparée à la position documentée de chaque parti sur la même question.
+3. L'application calcule, pour chaque parti, un score de compatibilité fondé sur une distance de Manhattan pondérée entre les réponses de l'utilisateur et les positions du parti.
+4. En parallèle, l'application calcule le positionnement de l'utilisateur sur deux axes idéologiques (économique et sociétal), à partir d'un sous-ensemble de questions classées par thème selon leur pertinence sur chaque axe.
+5. Un profil politique textuel est généré automatiquement à partir des scores obtenus par thématique.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Le quiz peut être commencé sans création de compte (Guest Flow). Les réponses et le résultat sont conservés sous un identifiant de session anonyme, puis rattachés au compte de l'utilisateur s'il choisit de s'inscrire par la suite.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Fonctionnalités
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+- Quiz de 30 questions avec échelle de réponse à 5 niveaux et possibilité de passer une question.
+- Explication contextuelle disponible sous chaque question.
+- Calcul du score de compatibilité avec les 6 partis politiques belges francophones couverts par l'application.
+- Positionnement graphique sur les deux axes idéologiques, aux côtés des 6 partis.
+- Génération d'un profil politique textuel personnalisé.
+- Comparateur détaillé, question par question, entre les réponses de l'utilisateur et la position de chaque parti.
+- Fiches descriptives des partis politiques.
+- Partage du résultat par lien public ou par image téléchargeable.
+- Création de compte classique ou connexion via Google, avec migration automatique d'une session invité existante.
+- Tableau de bord personnel avec historique des quiz réalisés.
+- Suppression, à la demande de l'utilisateur, d'un résultat ou de l'ensemble de son compte.
 
-## Agentic Development
+## Architecture technique
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+**Backend**
+- PHP 8.4, Laravel 13
+- API REST
+- Authentification par Laravel Sanctum en mode SPA (cookie de session), avec connexion Google via Laravel Socialite
+- Base de données PostgreSQL 16
 
-```bash
-composer require laravel/boost --dev
+**Frontend**
+- Vue.js 3 (API de composition)
+- Pinia pour la gestion d'état, Vue Router pour la navigation
+- Application monopage (SPA), compilée par Vite
+- Tailwind CSS pour les styles, Chart.js pour le graphique de positionnement idéologique
 
-php artisan boost:install
+**Déploiement**
+- Service unique sur Railway : le backend Laravel sert directement les fichiers statiques compilés du frontend Vue, plutôt que de déployer deux services distincts. Cette architecture élimine toute configuration CORS en production, le frontend et l'API étant servis depuis la même origine.
+
+**Tâches planifiées**
+- Un correctif automatique remet en échec, toutes les dix minutes, tout calcul de résultat resté bloqué anormalement longtemps.
+- Une purge quotidienne supprime les sessions invitées expirées.
+
+## Protection des données
+
+- Le démarrage du quiz requiert un consentement explicite, dont l'octroi et la version sont enregistrés en base de données.
+- Un utilisateur connecté peut supprimer définitivement un résultat de quiz ou son compte, ce qui entraîne la suppression de l'ensemble des données associées.
+- Le contenu politique et les résultats des utilisateurs sont strictement dissociés du profil de l'expert ayant rédigé ce contenu.
+
+## Structure du projet
+
+```
+app/
+  Http/Controllers/     Contrôleurs de l'API (authentification, quiz, résultats, partis, comparateur, partage)
+  Models/                Modèles Eloquent (User, QuizResult, Question, Party, PartyPosition, Answer, ...)
+  Services/              Logique métier (calcul du matching, des axes idéologiques, du profil, migration de compte, ...)
+database/
+  migrations/            Historique du schéma de la base de données
+  seeders/                Chargement du contenu politique validé par l'expert
+resources/
+  js/views/               Écrans de l'application Vue (accueil, quiz, résultats, comparateur, tableau de bord, ...)
+  js/stores/              Stores Pinia (authentification, quiz, résultats)
+routes/
+  api.php                 Points d'entrée de l'API REST
+  web.php                 Route de secours servant l'application monopage
+tests/                    Tests PHPUnit (backend) et Vitest (frontend)
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+## Installation locale
 
-## Contributing
+**Prérequis**
+- PHP 8.4 avec l'extension `gd`
+- Composer
+- Node.js et npm
+- PostgreSQL 16
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+**Étapes**
 
-## Code of Conduct
+```bash
+git clone <url-du-depot>
+cd PolitiMatch
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+composer install
+npm install
 
-## Security Vulnerabilities
+cp .env.example .env
+php artisan key:generate
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Renseigner dans `.env` les informations de connexion à la base de données PostgreSQL (`DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`) ainsi que, si la connexion Google doit être testée, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` et `GOOGLE_REDIRECT_URI`.
 
-## License
+```bash
+php artisan migrate --seed
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Pour le développement, avec rechargement automatique :
+
+```bash
+npm run dev
+php artisan serve
+```
+
+Pour une version compilée, servie directement par Laravel :
+
+```bash
+npm run build
+php artisan serve
+```
+
+## Tests
+
+```bash
+php artisan test
+```
+
+Exécute la suite de tests backend (PHPUnit), qui s'appuie sur une base PostgreSQL dédiée aux tests plutôt que sur SQLite, afin de vérifier réellement les contraintes propres à PostgreSQL utilisées dans le schéma.
+
+```bash
+npm run test
+```
+
+Exécute la suite de tests frontend (Vitest).
+
+## Licence
+
+Ce dépôt correspond à un travail académique réalisé dans le cadre d'une épreuve intégrée. Le contenu politique qu'il contient a été fourni par un expert externe et ne peut être réutilisé indépendamment de ce projet sans son accord.
